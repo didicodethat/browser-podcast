@@ -1,6 +1,4 @@
 import {useEffect, useState} from 'react'
-import '@mantine/core/styles.css';
-import { MantineProvider } from '@mantine/core';
 import './App.css'
 
 const podcastURLs = [
@@ -13,47 +11,46 @@ const podcastURL = podcastURLs[0]
 type ImageURL = string;
 type AudioURL = string;
 
-  function App() {
-    return (
-      <MantineProvider>
-        <PodcastInfo />
-      </MantineProvider>
-    )
-  }
+function App() {
+  return (
+    <PodcastInfo />
+  )
+}
 
-  interface Podcast {
-    name: string,
-    thumbnailUrl: ImageURL
-    episodes: Episode[]
-  }
+interface Podcast {
+  name: string,
+  thumbnailUrl: ImageURL
+  episodes: Episode[]
+}
 
-  interface Episode {
-    name: string,
-    description: string,
-    audioUrl: AudioURL,
-    thumbnailUrl?: ImageURL
-  }
+interface Episode {
+  name: string,
+  description: string,
+  audioUrl: AudioURL,
+  thumbnailUrl?: ImageURL
+}
 
-  function parsePodcast(doc : XMLDocument) : Pocast {
+function parsePodcast(doc : XMLDocument) : Podcast {
     console.log(doc)
     const el = doc.querySelector("rss>channel>title") as Element
     const name = el.innerHTML
     const thumbnailUrl = doc.querySelector("rss>channel>image>url")?.innerHTML || ""
-    const episodes = Array.from(doc.querySelectorAll("rss>channel>item").values().map((el: Element) : Episode => {
-      return {
-        name: el.querySelector("title")?.innerHTML,
-        audioUrl: el.querySelector("enclosure")?.getAttribute("url") || "",
-        description: el.querySelector("summary")?.innerHTML,
-        thumbnailUrl: el.querySelector("image")?.getAttribute("href")
-      }
-    })).slice(0, 10)
+    const episodes : Episode[] = Array.from(doc.querySelectorAll("rss>channel>item").values())
+      .map((el: Element) : Episode => {
+        return {
+          name: el.querySelector("title")?.innerHTML || '',
+          audioUrl: el.querySelector("enclosure")?.getAttribute("url") || "",
+          description: el.querySelector("summary")?.innerHTML || '',
+          thumbnailUrl: el.querySelector("image")?.getAttribute("href") || ''
+        }
+      }).slice(0, 10)
     return {name, thumbnailUrl, episodes}
   }
 
 
   function PodcastInfo() {
-    const [podcast, setPodcast] = useState<Podcast>(null)
-    const [err, setErr] = useState<Error>(null)
+    const [podcast, setPodcast] = useState<Podcast | null>(null)
+    const [err, setErr] = useState<Error | null>(null)
     async function getPodcast() : Promise<Podcast> {
       return fetch(podcastURL)
         .then(response => response.text())
@@ -69,7 +66,9 @@ type AudioURL = string;
         try {
           setPodcast(await getPodcast())
         } catch (e) {
-          setErr(e)
+          if (e instanceof Error) {
+            setErr(e)
+          }
         }
       })()
     }, [])
@@ -93,7 +92,7 @@ type AudioURL = string;
   function PodcastEpisode({episode} : {episode: Episode}) {
     return (
       <article>
-        {episode.thumbnailURL && (
+        {episode.thumbnailUrl && (
           <div><img className="podcastThumbnail" src={episode.thumbnailUrl}/></div>
       )}
       <h3>{episode.name}</h3>
